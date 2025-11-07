@@ -1,8 +1,244 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="utf -8">
-    <meta name="viewport" content="width=device, initial-scale=1">
-    <title>my diary</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> my dairy </title>
     <style>
-        
+      :root {
+        --bg:#f7f7f8; --card:#ffffff; --muted:#666; --accent:3b82f6;
+      }
+      *,::before,::after{box-sizing:border-box}
+      body{font-family: 'Segoe UI', Arial, sans-serif;background: var(--bg);margin: 0%;padding: 24px;color:#111}
+      h1{font-size: 20px;margin: 0;}
+      .container{display: grid;grid-template-columns:320px 1fr;gap:18px}
+      .pane1{background: var(--card);padding: 14px;border-radius: 12px;box-shadow: 0 2px 4px rgba(10, 10, 12, 0.04);}
+      .search{display:flex;gap:8px;margin-bottom:10px;}
+     input[type=text],textarea{width:100%;padding:10px;border:1px solid#e6e6e9;border-radius:8px;font-size: 14px}
+    .entry-list{max-height: 68vh;overflow-y:auto;padding-right: 6px}  
+    .entry-item{padding: 10px;border-radius: 8px;border: 1px solid transparent;margin-bottom: 8px;cursor: pointer;}
+    .entry-item:hover{background:#f3f6ff;border-color:#e2e8ff;}
+    .entry-item:active{background:#eef2ff;border-color:var(--accent)}
+    .meta{font-size:12px;color:var(--muted);}
+    .buttons{display: flex;gap:8px;flex-wrap:wrap}
+    button{background: var(--accent);color:white;padding:8px 10px;border: none;border-radius:8px;cursor: pointer;}
+    button.ghost{background: transparent;color: var(--accent);border: 1px solid var(--accent);}
+    .editor{display: flex;flex-direction: column;gap: 10px;min-height: 60vh;}
+    .editor .toolbar{display: flex;gap: 8px;align-items: center;}
+    .notes{flex: 1}
+    .notes{color: var(--muted);text-align:center;padding: 40px;}
+    footer{margin-top: 12px;text-align: center;color: var(--muted);font-size: 13px;}
+
+    @media (max-width: 880px)
+      {.container{grid-template-columns: 1fr;}header{flex-direction: column;align-items: flex-start;}}
+    </style>
+    </head> 
+    <body>
+    <header>
+      <h1> my dairy</h1>
+    <div style="color: var(--muted);font-size: 13px">personal notebook - saved locally on your device </div>
+    </div>
+    <div class="buttons">
+    <button id="newBtn">New entry</button>
+    <button id="exportBtn" class="ghost">Export</button>
+    <button id="importBtn" class="ghost">Import</button>
+    </div>
+    </header>
+
+    <main class="contaniner">
+      <aside class="pane1">
+        <div class="search">
+          <input id="search" type="text" placeholder="Search in the diaries...">
+          <button id="clearSearch" class="ghost">Clear</button>
+        </div>
+
+        <div class="entry-list panel" id="list"> 
+          <!-- Diary entries will appear here -->
+        </div>
+      </aside>
+      <section class="panel editor"
+      <div style="display: flex ;justify-content: space-between;align-items: center;">
+      </div>
+      <div class="buttons"
+      <button id="saveBtn">save</button>
+      <button id="deleteBtn" class="ghost">delete</button>
+    </div>
+      </div>
+      <div class="toolbar">
+        <button id="boldBtn" class="ghost">Dark</button>
+        <button id="italicBtn" class="ghost">Inclined</button>
+        <button id="cleaneBtn" class="ghost">Clean</button>
+      </div>
+      <textarea id="content" class="notes" placeholder="Write here"spellcheck="true"></textarea>
+      <div style="display: flex;justify-content: space-between;align-items: center;"
+      <div style="color: var(--muted);font-size:13px">Last modified: <span id="updatedAt">-</div></span></div>
+      <div>
+        <button id="downloadTxt" class="ghost">Download as .txt</button>
+      </div>
+      <div>
+        <div id="emptyHint" class="empty" style="display: none">Select an entry from the list or click 'New Entry' to start</div>
+      </section>
+    </main>
+    <footer>A simple site for your daily journal — saved only in your browser</footer>
+    <input id="fileInput" type="file" accept="application/json" style="display: none">
+    <script>
+     //A simple storage using localStorage
+     const KEY =  'my_dairy_entries.v1';
+     let entries = JSON.parse(localStorage.getItem(KEY)) || [];
+     let active = null
+      const listEl = document.getElementById('list');
+      const titleEl = document.getElementById('title');
+      const contentEl = document.getElementById('content');
+      const dateLabelEl = document.getElementById('dateLabel');
+      const updatedAtEl = document.getElementById('updatedAt');
+      const emptyHintEl = document.getElementById('emptyHint');
+
+      function saveStorage(){localStorage.setItem(KEY, JSON.stringify(entries));}
+      function makeId(){return Date.now().toString(36) + Math.random().toString(36).slice(2,7);}
+      function renderList(filter= ''){
+        listEl.innerHTML = '';
+        const filtered = entries.slice().sort((a,b)=>b.updatedAt - a.updatedAt).filter(e=>!filter || e.content.toLowerCase().includes(filter.toLowerCase()))};
+        const s = (e.title + ' ' + e.content).toLowerCase();
+        return s.includes(filter.toLowerCase());
+        if(filtered.length ===0){listEl.innerHTML ='<div stlyle="color: var(--muted);padding:18px">No entries found</div>' ;return;}
+        filtered.forEach(e => {
+          const item = document.createElement('div');
+          item.className = 'entry-item';
+          if(e.id===activeId)item.classList.add('active');
+          item.innerHTML = `<div style="font-weight:600">${escapeHtml(e.title || 'Untitled')}</div><div class="meta">${new Date(e.updatedAt).toLocaleString()}</div>`;
+          item.onclick = () => {setActiveEntry(e.id);};
+          listEl.appendChild(item);
+        });
+      function openEntry(id){
+        const e = entries.find(en=>en.id===id);
+        activeld = id;
+        titleEl.value = e.title;
+        contentEl.value = e.content;
+        dateLabelEl.textContent = new Date(e.createdAt).toLocaleString();
+        updatedAtEl.textContent = new Date(e.updatedAt).toLocaleString();
+        emptyHintEl.style.display = 'none';
+        renderList(document.getElementById('search').value);
+      }
+      function createNew(){
+        const id = makeId();
+        const now = Date.now();
+        const e = {id, title:'', content:'', createdAt: now, updatedAt: now};
+        entries.push(e);
+        saveStorage();
+        renderList();
+        openEntry(id);
+      }
+      function saveActive(){
+        if(!activeId){alert('No active entry to save');return;}
+        const e = entries.find(en=>en.id===activeId);
+        if(!e)return;
+        e.title = titleEl.value.trim();
+        e.content = contentEl.value.trim();
+        e.updatedAt = Date.now();
+        saveStorage(); renderList(document.getElementById('search').value);
+        updatedAtEl.textContent = new Date(e.updatedAt).toLocaleString();
+      }
+      function deleteActive(){
+        if(!activeId){alert('No active entry to delete');return;}
+        if(!confirm('Are you sure you want to delete this entry?'))return;
+        entries = entries.filter(x=>x.id!==activeId);saveStorage ();activeId = null; titleEl.value ='';contentEl.value ='';dateLabelEl.textContent ='-';updatedAtEl.textContent ='-';emptyHintEl.style.display ='block';renderList(document.getElementById('search').value)
+      }
+      // utilities
+      function escapeHtml(s){
+        return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+      }
+      //toolbar
+      document.getElementById('boldBtn').onclick = () =>wrapselection('**'); {
+        document.getElementById('italicBtn').onclick = () => wrapselection('*');
+        document.getElementById('clearBtn').onclick = () => {if(confirm('Clear all content?'))contentEl.value ='';};
+      };
+      function wrapselection(a,b){
+        const start = contentEl.selectionStart;
+        const end = contentEl.selectionEnd;
+        const selectedText = contentEl.value.slice (start, end);
+        const beforeText = contentEl.value.slice(0, start);
+        const afterText = contentEl.value.slice(end);
+        contentEl.value = beforeText + wrapper + selectedText + wrapper + afterText;
+        contentEl.focus();
+        contentEl.selectionStart = start + wrapper.length;
+        contentEl.selectionEnd = end + wrapper.length;
+      }
+      //event listeners
+      document.getElementById('newBtn').onclick = createNew;
+      document.getElementById('saveBtn').onclick = saveActive;
+      document.getElementById('deleteBtn').onclick = deleteActive;
+
+      document.getElementById('search').addEventListener('input', (e) => {
+        renderList(e.target.value);
+        document.getElementById('clearSearch').onclick = () => {document.getElementById('search').value ='';
+        };
+      });
+      // export/import
+      document.getElementById('exportBtn').onclick = () =>{
+       const date = JSON.stringify(entries, null, 2);
+       const blob = new Blob([date],{type: application/JSON});
+       const url = URL.createObjectURL(blob)
+       const a = document.createElement('a');a.href=url;a.download ='my_dairy_entries.json';a.click();URL.revokeObjectURL(url);
+       document.getElementById('importBtn').onclick = () => {
+        document.getElementById('fileInput').click();
+        document.getElementById('fileInput').onchange = (e) => {
+          const file = e.target.files[0];
+          if(!file)return;
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            try {
+              const arr = JSON.parse(reader.result);
+              if(!Array.isArray(arr))throw'Invalid';
+              //Combine in a simple way: replace the upright
+              entries = [...entries, ...arr];
+              saveStorage();
+              renderList();
+              alert('Import successful!');
+            } catch (err) {alert('Failed Invalid: ' + err);
+            }
+          };
+          reader.readAsText(file);
+       };
+    }
+    };
+    //Download single entry as .txt
+    document.getElementById('downloadTxt').onclick = () => {
+      if(!activeId){alert('No active entry to download');return;}
+      const e = entries.find(en=>en.id===activeId);
+      if(!e){alert('Active entry not found');return;}
+      const text = `Title: ${e.title || 'Untitled'}\nCreated At: ${new Date(e.createdAt).toLocaleString()}\nUpdated At: ${new Date(e.updatedAt).toLocaleString()}\n\n${e.content}`;
+      const blob = new Blob([text], {type: 'text/plain'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${e.title || 'untitled'}.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+    };
+    //auto-save every 10s if changes
+    let lastsaveHash = '';
+    function hash(s){let h = 0;for(let i=0;i<s.length;i++){h = (h << 5) - h + s.charCodeAt(i);h |=0;}return h;}
+    setInterval(() => {
+      if(!activeId)return;
+      const currentHash = hash(titleEl.value + '|' + contentEl.value);
+      if(currentHash !== lastsaveHash){
+        saveActive();
+        lastsaveHash = currentHash;
+      }
+    }, 10000);
+
+    //open most recent entry on load
+    function init(){
+      renderList();
+      if(entries.length){
+        const recent = entries.slice().sort((a,b)=>b.updatedAt - a.updatedAt)[0];
+        openEntry(recent.id);
+      }
+      else{
+        emptyHintEl.style.display = 'block';
+      }
+    }
+    init();
+    </script>
+    </body>
+</html>
